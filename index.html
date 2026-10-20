@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mở Nhánh Vận Mệnh</title>
+  <style>
+    :root {
+      --primary: #9c27b0;
+      --primary-dark: #6a1b9a;
+      --accent: #ff4081;
+      --key-col-bg: #80e27e;   /* Màu xanh lá tươi cột từ khóa */
+      --key-col-border: #2e7d32;
+      --cell-bg: #ffcc80;      /* Màu cam vàng ô thường */
+      --cell-border: #f57c00;
+      --cell-size: 42px;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #1a0933 0%, #311b92 100%);
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .main-title {
+      color: #ffd54f;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(255, 213, 79, 0.5);
+    }
+
+    .subtitle {
+      color: #e0e0e0;
+      font-style: italic;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+
+    .game-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 25px;
+      justify-content: center;
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    /* Khung chứa bảng ô chữ */
+    .crossword-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+      flex: 1 1 550px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: auto;
+    }
+
+    /* Bàn ô chữ */
+    .board {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .row-num-btn {
+      width: 34px;
+      height: 34px;
+      background: #ffd54f;
+      color: #333;
+      font-weight: bold;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 8px;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+
+    .row-num-btn:hover, .row-num-btn.active {
+      transform: scale(1.15);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* Trạng thái đúng / sai của nút số */
+    .row-num-btn.correct {
+      background: #4caf50 !important;
+      color: #fff !important;
+    }
+
+    .row-num-btn.wrong {
+      background: #f44336 !important;
+      color: #fff !important;
+      animation: shake 0.3s ease-in-out;
+    }
+
+    /* Ô input gõ chữ */
+    .cell-input {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      background-color: var(--cell-bg);
+      border: 2px solid var(--cell-border);
+      border-radius: 6px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      color: #1a1a1a;
+      text-transform: uppercase;
+      outline: none;
+      transition: all 0.2s ease;
+      padding: 0;
+    }
+
+    .cell-input:focus {
+      border-color: #ffffff;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+      transform: scale(1.05);
+    }
+
+    /* Cột từ khóa dọc */
+    .cell-input.key-column {
+      background-color: var(--key-col-bg);
+      border-color: var(--key-col-border);
+      color: #0d5302;
+    }
+
+    .cell-input.empty-space {
+      visibility: hidden;
+      border: none;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    /* Đổi màu khi Đúng / Sai */
+    .cell-input.is-correct {
+      background-color: #81c784 !important;
+      border-color: #2e7d32 !important;
+      color: #1b5e20 !important;
+    }
+
+    .cell-input.is-wrong {
+      background-color: #ef5350 !important;
+      border-color: #c62828 !important;
+      color: #ffffff !important;
+      animation: shake 0.4s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+
+    /* Khung thông tin bên phải */
+    .side-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      flex: 1 1 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .control-box {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border-radius: 12px;
+      border-left: 4px solid var(--accent);
+    }
+
+    .question-title {
+      color: #ffd54f;
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .question-content {
+      font-size: 16px;
+      line-height: 1.5;
+      min-height: 60px;
+    }
+
+    .status-msg {
+      margin-top: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      min-height: 22px;
+    }
+
+    .status-msg.error { color: #ff5252; }
+    .status-msg.success { color: #69f0ae; }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .action-btn {
+      background: linear-gradient(45deg, var(--accent), #7b1fa2);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      flex: 1;
+      transition: all 0.2s;
+    }
+
+    .action-btn.secondary {
+      background: linear-gradient(45deg, #4527a0, #283593);
+    }
+
+    .action-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    .rules-box {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 18px;
+      border-radius: 12px;
+    }
+
+    .rules-box h3 {
+      color: #81d4fa;
+      margin-top: 0;
+    }
+
+    .rules-box ul {
+      padding-left: 20px;
+      margin-bottom: 0;
+      line-height: 1.6;
+      font-size: 14px;
+      color: #e0e0e0;
+    }
+
+    /* Modal kết quả chiến thắng */
+    .victory-banner {
+      display: none;
+      background: linear-gradient(45deg, #2e7d32, #1b5e20);
+      padding: 15px;
+      border-radius: 12px;
+      text-align: center;
+      margin-top: 20px;
+      animation: pop 0.5s ease-out;
+      width: 100%;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="main-title">🔮 Trò Chơi: Mở Nhánh Vận Mệnh</h1>
+  <p class="subtitle">Giải mã các mảnh ghép ngang để kích hoạt từ khóa bí mật hàng dọc!</p>
+
+  <div class="game-container">
+    <!-- Cột trái: Bảng ô chữ -->
+    <div class="crossword-card">
+      <div class="board" id="board"></div>
+
+      <div class="victory-banner" id="victoryBanner">
+        <h2 style="margin: 0; color: #ffd54f;">🎉 NHÁNH VẬN MỆNH ĐÃ ĐƯỢC MỞ KHÓA! 🎉</h2>
+        <p style="margin: 8px 0 0 0; font-size: 18px;">Từ khóa đặc biệt: <strong style="color: #80e27e; font-size: 24px;">PHU NU VN</strong></p>
+      </div>
+    </div>
+
+    <!-- Cột phải: Khung hiển thị câu hỏi & Thể lệ -->
+    <div class="side-card">
+      <div class="control-box">
+        <div class="question-title" id="qTitle">Chọn hàng ngang (1-7) để xem câu hỏi</div>
+        <div class="question-content" id="qText">Bấm vào số hàng ở bên trái hoặc chọn ô chữ để hiển thị thử thách...</div>
+        <div class="status-msg" id="statusMsg"></div>
+
+        <div class="button-group" id="btnGroup" style="display:none;">
+          <button class="action-btn" id="btnCheck" onclick="checkCurrentRow()">Kiểm Tra Hàng Này</button>
+          <button class="action-btn secondary" onclick="revealCurrentRow()">Gợi Ý / Mở Đáp Án</button>
+        </div>
+      </div>
+
+      <div class="rules-box">
+        <h3>📜 Thể Lệ Luật Chơi</h3>
+        <ul>
+          <li>Nhấp vào số hàng <b>(1-7)</b> hoặc nhấp trực tiếp vào các ô chữ để nhập đáp án.</li>
+          <li>Khi nhập xong, bấm <b>"Kiểm Tra Hàng Này"</b> để xác nhận.</li>
+          <li>Nếu <b>Sai</b>: Các ô sẽ <b>báo đỏ</b> và tự động <b>xóa ký tự</b> sau 1 giây để nhập lại!</li>
+          <li>Các chữ cái nằm trên <b>trục màu xanh ngọc</b> sẽ ghép thành Từ Khóa Bí Mật.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Cột từ khóa cố định tại index 3
+    const TARGET_COL = 3; 
+
+    const gameData = [
+      { word: "PRINT", keyIndex: 0, q: "Lệnh xuất dữ liệu/kết quả ra màn hình trong Python hoặc C?" },
+      { word: "THUATTOAN", keyIndex: 1, q: "Tập hợp các bước logic nối tiếp nhau để giải quyết bài toán?" },
+      { word: "INPUT", keyIndex: 3, q: "Dữ liệu đầu vào đi vào hệ thống để xử lý?" },
+      { word: "NODE", keyIndex: 0, q: "Điểm nút lưu trữ dữ liệu trong cấu trúc Cây hoặc Danh sách liên kết?" },
+      { word: "CAUTRUC", keyIndex: 2, q: "Khái niệm gom nhóm lưu trữ dữ liệu (Data Structure / Cấu trúc)?" },
+      { word: "VECTOR", keyIndex: 0, q: "Mảng động 1 chiều phổ biến trong C++, có cả hướng và độ lớn?" },
+      { word: "NUMBER", keyIndex: 0, q: "Kiểu dữ liệu cơ bản dùng để lưu trữ các con số?" }
+    ];
+
+    let currentRow = -1;
+    let isChecking = false; // Khóa tránh spam khi đang chạy hiệu ứng xóa
+
+    const boardEl = document.getElementById("board");
+    const qTitleEl = document.getElementById("qTitle");
+    const qTextEl = document.getElementById("qText");
+    const statusMsgEl = document.getElementById("statusMsg");
+    const btnGroup = document.getElementById("btnGroup");
+
+    function initBoard() {
+      boardEl.innerHTML = "";
+
+      gameData.forEach((item, rIndex) => {
+        const rowEl = document.createElement("div");
+        rowEl.className = "row";
+
+        // Nút số thứ tự hàng
+        const numBtn = document.createElement("button");
+        numBtn.className = "row-num-btn";
+        numBtn.innerText = rIndex + 1;
+        numBtn.id = `num-btn-${rIndex}`;
+        numBtn.onclick = () => selectRow(rIndex);
+        rowEl.appendChild(numBtn);
+
+        // Đệm ô trống phía trước
+        const paddingLeft = TARGET_COL - item.keyIndex;
+        for (let i = 0; i < paddingLeft; i++) {
+          const emptyCell = document.createElement("input");
+          emptyCell.className = "cell-input empty-space";
+          emptyCell.disabled = true;
+          rowEl.appendChild(emptyCell);
+        }
+
+        // Ô nhập ký tự
+        for (let cIndex = 0; cIndex < item.word.length; cIndex++) {
+          const input = document.createElement("input");
+          input.type = "text";
+          input.maxLength = 1;
+          input.className = "cell-input";
+          input.dataset.row = rIndex;
+          input.dataset.col = cIndex;
+          input.id = `cell-${rIndex}-${cIndex}`;
+
+          if (cIndex === item.keyIndex) {
+            input.classList.add("key-column");
+          }
+
+          input.addEventListener("focus", () => selectRow(rIndex, false));
+
+          // Tự chuyển ô tiếp theo khi gõ
+          input.addEventListener("input", (e) => {
+            e.target.value = e.target.value.toUpperCase();
+            if (e.target.value) {
+              const nextInput = document.getElementById(`cell-${rIndex}-${cIndex + 1}`);
+              if (nextInput) nextInput.focus();
+            }
+          });
+
+          // Xử lý nút xóa lùi (Backspace)
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Backspace" && !e.target.value) {
+              const prevInput = document.getElementById(`cell-${rIndex}-${cIndex - 1}`);
+              if (prevInput) prevInput.focus();
+            }
+          });
+
+          rowEl.appendChild(input);
+        }
+
+        boardEl.appendChild(rowEl);
+      });
+    }
+
+    function selectRow(index, focusFirstInput = true) {
+      if (isChecking) return;
+      currentRow = index;
+      
+      document.querySelectorAll(".row-num-btn").forEach((btn, i) => {
+        if (i === index) btn.classList.add("active");
+        else btn.classList.remove("active");
+      });
+
+      const item = gameData[index];
+      qTitleEl.innerText = `Câu hỏi Hàng ${index + 1} (${item.word.length} chữ cái):`;
+      qTextEl.innerText = item.q;
+      statusMsgEl.innerText = "";
+      statusMsgEl.className = "status-msg";
+      btnGroup.style.display = "flex";
+
+      if (focusFirstInput) {
+        const firstInput = document.getElementById(`cell-${index}-0`);
+        if (firstInput && !firstInput.disabled) firstInput.focus();
+      }
+    }
+
+    function checkCurrentRow() {
+      if (currentRow === -1 || isChecking) return;
+
+      const item = gameData[currentRow];
+      let userWord = "";
+      for (let cIndex = 0; cIndex < item.word.length; cIndex++) {
+        const cell = document.getElementById(`cell-${currentRow}-${cIndex}`);
+        userWord += cell.value.trim().toUpperCase();
+      }
+
+      const numBtn = document.getElementById(`num-btn-${currentRow}`);
+
+      if (userWord === item.word) {
+        // TRẢ LỜI ĐÚNG: Đổi sang màu xanh & khóa ô
+        for (let cIndex = 0; cIndex < item.word.length; cIndex++) {
+          const cell = document.getElementById(`cell-${currentRow}-${cIndex}`);
+          cell.classList.remove("is-wrong");
+          cell.classList.add("is-correct");
+          cell.disabled = true; // Khóa ô khi đã đúng
+        }
+        numBtn.classList.remove("wrong");
+        numBtn.classList.add("correct");
+
+        statusMsgEl.innerText = "✓ Chính xác!";
+        statusMsgEl.className = "status-msg success";
+
+        checkVictory();
+      } else {
+        // TRẢ LỜI SAI: Báo đỏ + Rung + Xóa hết ô sau 1s
+        isChecking = true;
+        numBtn.classList.add("wrong");
+        statusMsgEl.innerText = "✕ Đáp án chưa đúng, đang thử lại...";
+        statusMsgEl.className = "status-msg error";
+
+        for (let cIndex = 0; cIndex < item.word.length; cIndex++) {
+          const cell = document.getElementById(`cell-${currentRow}-${cIndex}`);
+          cell.classList.add("is-wrong");
+        }
+
+        // Tự động xóa sạch sau 1 giây
+        setTimeout(() => {
+          for (let cIndex = 0; cIndex < item.word.length; cIndex++) {
+            const cell = document.getElementById(`cell-${currentRow}-${cIndex}`);
+            cell.classList.remove("is-wrong");
+            cell.value = ""; // Clear ô
+          }
+          numBtn.classList.remove("wrong");
+          statusMsgEl.innerText = "Hãy thử lại!";
+          isChecking = false;
+
+          // Focus lại ô đầu tiên
+          const firstInput = document.getElementById(`cell-${currentRow}-0`);
+          if (firstInput) firstInput.focus();
+        }, 1000);
+      }
+    }
+
+    function revealCurrentRow() {
+      if (currentRow === -1 || isChecking) return;
+      const item = gameData[currentRow];
+      for (let cIndex = 0; cIndex < item.word.length; cIndex++) {
+        const cell = document.getElementById(`cell-${currentRow}-${cIndex}`);
+        cell.value = item.word[cIndex];
+      }
+      checkCurrentRow();
+    }
+
+    function checkVictory() {
+      let allCorrect = true;
+      gameData.forEach((item, rIndex) => {
+        let userWord = "";
+        for (let cIndex = 0; cIndex < item.word.length; cIndex++) {
+          const cell = document.getElementById(`cell-${rIndex}-${cIndex}`);
+          userWord += cell.value.trim().toUpperCase();
+        }
+        if (userWord !== item.word) {
+          allCorrect = false;
+        }
+      });
+
+      if (allCorrect) {
+        document.getElementById("victoryBanner").style.display = "block";
+      }
+    }
+
+    // Khởi tạo
+    initBoard();
+  </script>
+</body>
+</html>
